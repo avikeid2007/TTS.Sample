@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IndicF5 — Indian Language TTS</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #f97316, #ec4899, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    header p {
+      color: #94a3b8;
+      margin-top: .4rem;
+      font-size: .95rem;
+    }
+
+    .card {
+      background: #1e2130;
+      border: 1px solid #2d3246;
+      border-radius: 1rem;
+      padding: 2rem;
+      width: 100%;
+      max-width: 720px;
+    }
+
+    .field { margin-bottom: 1.4rem; }
+    label {
+      display: block;
+      font-size: .85rem;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: .5rem;
+    }
+
+    textarea, input[type="text"], select {
+      width: 100%;
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: .6rem;
+      color: #f1f5f9;
+      font-size: .95rem;
+      padding: .7rem .9rem;
+      transition: border-color .2s;
+      outline: none;
+      resize: vertical;
+    }
+    textarea:focus, input[type="text"]:focus, select:focus {
+      border-color: #8b5cf6;
+    }
+    textarea { min-height: 100px; }
+
+    select option { background: #111827; }
+
+    /* Language pills */
+    .lang-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .45rem;
+    }
+    .pill {
+      padding: .3rem .75rem;
+      border-radius: 999px;
+      border: 1px solid #374151;
+      background: #111827;
+      font-size: .8rem;
+      cursor: pointer;
+      transition: all .15s;
+      color: #cbd5e1;
+    }
+    .pill:hover { border-color: #8b5cf6; color: #e2e8f0; }
+    .pill.active {
+      background: #4c1d95;
+      border-color: #7c3aed;
+      color: #fff;
+    }
+
+    /* File drop zone */
+    .drop-zone {
+      border: 2px dashed #374151;
+      border-radius: .6rem;
+      padding: 1.2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      background: #111827;
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: #8b5cf6;
+      background: #1a1040;
+    }
+    .drop-zone input[type="file"] { display: none; }
+    .drop-zone .icon { font-size: 1.8rem; margin-bottom: .3rem; }
+    .drop-zone .hint { font-size: .85rem; color: #64748b; margin-top: .25rem; }
+    .drop-zone .filename { font-size: .9rem; color: #a78bfa; margin-top: .4rem; font-weight: 600; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+      padding: .75rem 1.6rem;
+      border-radius: .6rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity .2s, transform .1s;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-primary { background: linear-gradient(135deg, #7c3aed, #ec4899); color: #fff; width: 100%; justify-content: center; }
+    .btn-dl { background: #1e3a5f; color: #93c5fd; margin-top: .75rem; }
+
+    /* Status */
+    #status {
+      margin-top: 1rem;
+      padding: .7rem 1rem;
+      border-radius: .5rem;
+      font-size: .9rem;
+      display: none;
+    }
+    #status.info  { background: #1e293b; color: #7dd3fc; }
+    #status.error { background: #3b0f0f; color: #fca5a5; }
+    #status.ok    { background: #052e16; color: #86efac; }
+
+    /* Audio result */
+    #result { margin-top: 1.5rem; display: none; }
+    #result h3 { font-size: .9rem; color: #94a3b8; text-transform: uppercase; letter-spacing: .06em; margin-bottom: .6rem; }
+    audio { width: 100%; border-radius: .5rem; accent-color: #8b5cf6; }
+
+    .row { display: flex; gap: .75rem; flex-wrap: wrap; }
+    .row .field { flex: 1; min-width: 200px; }
+
+    .badge {
+      display: inline-block;
+      font-size: .72rem;
+      background: #1e293b;
+      color: #7dd3fc;
+      border: 1px solid #1e3a5f;
+      border-radius: 999px;
+      padding: .1rem .55rem;
+      margin-left: .4rem;
+      vertical-align: middle;
+    }
+
+    footer {
+      margin-top: 2rem;
+      font-size: .78rem;
+      color: #475569;
+    }
+    footer a { color: #6366f1; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>IndicF5 TTS</h1>
+  <p>High-quality Text-to-Speech for Indian languages &nbsp;<span class="badge">11 languages</span></p>
+</header>
+
+<div class="card">
+
+  <!-- Language selector -->
+  <div class="field">
+    <label>Language <span style="color:#4b5563;font-weight:400;text-transform:none;">(click to insert a sample)</span></label>
+    <div class="lang-pills" id="langPills">
+      <span class="pill" data-lang="as" data-sample="মই তোমাক ভাল পাওঁ। সংগীত জীৱনক সুন্দৰ কৰে।">Assamese</span>
+      <span class="pill" data-lang="bn" data-sample="আমি তোমাকে ভালোবাসি। সংগীত জীবনকে সুন্দর করে।">Bengali</span>
+      <span class="pill" data-lang="gu" data-sample="હું તને પ્રેમ કરું છું. સંગીત જીવનને સુંદર બનાવે છે.">Gujarati</span>
+      <span class="pill active" data-lang="hi" data-sample="नमस्ते! संगीत की तरह जीवन भी खूबसूरत होता है, बस इसे सही ताल में जीना आना चाहिए।">Hindi</span>
+      <span class="pill" data-lang="kn" data-sample="ನಾನು ನಿನ್ನನ್ನು ಪ್ರೀತಿಸುತ್ತೇನೆ. ಸಂಗೀತ ಜೀವನವನ್ನು ಸುಂದರಗೊಳಿಸುತ್ತದೆ.">Kannada</span>
+      <span class="pill" data-lang="ml" data-sample="ഞാൻ നിന്നെ സ്നേഹിക്കുന്നു. സംഗീതം ജീവിതത്തെ സുന്ദരമാക്കുന്നു.">Malayalam</span>
+      <span class="pill" data-lang="mr" data-sample="मी तुझ्यावर प्रेम करतो. संगीत जीवन सुंदर बनवते.">Marathi</span>
+      <span class="pill" data-lang="or" data-sample="ମୁଁ ତୁମକୁ ଭଲ ପାଏ। ସଂଗୀତ ଜୀବନକୁ ସୁନ୍ଦର କରେ।">Odia</span>
+      <span class="pill" data-lang="pa" data-sample="ਮੈਂ ਤੁਹਾਨੂੰ ਪਿਆਰ ਕਰਦਾ ਹਾਂ। ਸੰਗੀਤ ਜ਼ਿੰਦਗੀ ਨੂੰ ਸੁੰਦਰ ਬਣਾਉਂਦਾ ਹੈ।">Punjabi</span>
+      <span class="pill" data-lang="ta" data-sample="நான் உன்னை நேசிக்கிறேன். இசை வாழ்க்கையை அழகாக்குகிறது.">Tamil</span>
+      <span class="pill" data-lang="te" data-sample="నేను నిన్ను ప్రేమిస్తున్నాను. సంగీతం జీవితాన్ని అందంగా చేస్తుంది.">Telugu</span>
+    </div>
+  </div>
+
+  <!-- Text to synthesize -->
+  <div class="field">
+    <label>Text to synthesize</label>
+    <textarea id="synthText" placeholder="Type or paste the text you want to convert to speech…">नमस्ते! संगीत की तरह जीवन भी खूबसूरत होता है, बस इसे सही ताल में जीना आना चाहिए।</textarea>
+  </div>
+
+  <!-- Reference audio -->
+  <div class="field">
+    <label>Reference audio <span style="color:#4b5563;font-weight:400;text-transform:none;">(WAV or MP3)</span></label>
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="refAudio" accept="audio/*" />
+      <div class="icon">🎙️</div>
+      <div>Drop a WAV/MP3 file here, or <strong style="color:#a78bfa">click to browse</strong></div>
+      <div class="hint">The model will clone the voice style from this clip.</div>
+      <div class="filename" id="refFilename"></div>
+    </div>
+  </div>
+
+  <!-- Reference transcript -->
+  <div class="field">
+    <label>Transcript of reference audio</label>
+    <textarea id="refText" rows="2" placeholder="Paste the exact text spoken in the reference audio clip…"></textarea>
+  </div>
+
+  <!-- Submit -->
+  <button class="btn btn-primary" id="generateBtn" onclick="generate()">
+    <span>⚡</span> Generate Speech
+  </button>
+
+  <!-- Status -->
+  <div id="status"></div>
+
+  <!-- Result -->
+  <div id="result">
+    <h3>Output Audio</h3>
+    <audio id="audioPlayer" controls></audio>
+    <br/>
+    <button class="btn btn-dl" id="dlBtn">⬇️ Download WAV</button>
+  </div>
+</div>
+
+<footer>
+  Powered by <a href="https://huggingface.co/ai4bharat/IndicF5" target="_blank">ai4bharat/IndicF5</a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/AI4Bharat/IndicF5" target="_blank">GitHub</a>
+  &nbsp;·&nbsp; License: MIT
+</footer>
+
+<script>
+  // ── Language pills ──────────────────────────────────────────────────────────
+  document.querySelectorAll('.pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      const sample = pill.dataset.sample;
+      if (sample) document.getElementById('synthText').value = sample;
+    });
+  });
+
+  // ── Drop zone ───────────────────────────────────────────────────────────────
+  const dropZone = document.getElementById('dropZone');
+  const refInput = document.getElementById('refAudio');
+
+  dropZone.addEventListener('click', () => refInput.click());
+
+  dropZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+  });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) setRefFile(file);
+  });
+  refInput.addEventListener('change', () => {
+    if (refInput.files[0]) setRefFile(refInput.files[0]);
+  });
+
+  function setRefFile(file) {
+    // Replace the FileList on the input element
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    refInput.files = dt.files;
+    document.getElementById('refFilename').textContent = '📎 ' + file.name;
+  }
+
+  // ── Generate ────────────────────────────────────────────────────────────────
+  let currentBlobUrl = null;
+
+  async function generate() {
+    const text    = document.getElementById('synthText').value.trim();
+    const refText = document.getElementById('refText').value.trim();
+    const refFile = document.getElementById('refAudio').files[0];
+
+    // Validation
+    if (!text)    return showStatus('Please enter text to synthesize.', 'error');
+    if (!refFile) return showStatus('Please upload a reference audio file.', 'error');
+    if (!refText) return showStatus('Please enter the transcript of the reference audio.', 'error');
+
+    const btn = document.getElementById('generateBtn');
+    btn.disabled = true;
+    showStatus('Generating speech… this may take 10–30 seconds.', 'info');
+    hideResult();
+
+    const form = new FormData();
+    form.append('text', text);
+    form.append('ref_text', refText);
+    form.append('ref_audio', refFile, refFile.name);
+
+    try {
+      const res = await fetch('/synthesize', { method: 'POST', body: form });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new Error(err.detail || 'Unknown error');
+      }
+
+      const blob = await res.blob();
+      if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+      currentBlobUrl = URL.createObjectURL(blob);
+
+      const player = document.getElementById('audioPlayer');
+      player.src = currentBlobUrl;
+      player.load();
+
+      const dlBtn = document.getElementById('dlBtn');
+      dlBtn.onclick = () => {
+        const a = document.createElement('a');
+        a.href = currentBlobUrl;
+        a.download = 'indicf5_output.wav';
+        a.click();
+      };
+
+      document.getElementById('result').style.display = 'block';
+      showStatus('Speech generated successfully!', 'ok');
+    } catch (err) {
+      showStatus('Error: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function showStatus(msg, type) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = type;
+    el.style.display = 'block';
+  }
+
+  function hideResult() {
+    document.getElementById('result').style.display = 'none';
+  }
+</script>
+</body>
+</html>
