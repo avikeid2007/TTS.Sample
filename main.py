@@ -55,9 +55,17 @@ async def lifespan(app: FastAPI):
     global tts_model
     log.info("Loading IndicF5 model …")
     try:
+        import torch
         from transformers import AutoModel
-        tts_model = AutoModel.from_pretrained("ai4bharat/IndicF5", trust_remote_code=True)
-        log.info("IndicF5 model loaded successfully.")
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        log.info("Using device: %s", device)
+        tts_model = AutoModel.from_pretrained(
+            "ai4bharat/IndicF5",
+            trust_remote_code=True,
+        )
+        if device == "cuda":
+            tts_model = tts_model.to(device)
+        log.info("IndicF5 model loaded successfully on %s.", device)
     except Exception as exc:
         log.error("Failed to load IndicF5 model: %s", exc)
         log.warning("The /synthesize endpoint will return 503 until the model is available.")
@@ -81,7 +89,13 @@ async def root():
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "model_loaded": tts_model is not None}
+    device = None
+    if tts_model is not None:
+        try:
+            device = str(next(tts_model.parameters()).device)
+        except StopIteration:
+            device = "unknown"
+    return {"status": "ok", "model_loaded": tts_model is not None, "device": device}
 
 
 @app.post("/synthesize")
